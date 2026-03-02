@@ -1,17 +1,96 @@
-# Gitea
+# BlockCommit
 
-[![](https://github.com/go-gitea/gitea/actions/workflows/release-nightly.yml/badge.svg?branch=main)](https://github.com/go-gitea/gitea/actions/workflows/release-nightly.yml?query=branch%3Amain "Release Nightly")
-[![](https://img.shields.io/discord/322538954119184384.svg?logo=discord&logoColor=white&label=Discord&color=5865F2)](https://discord.gg/Gitea "Join the Discord chat at https://discord.gg/Gitea")
-[![](https://goreportcard.com/badge/code.gitea.io/gitea)](https://goreportcard.com/report/code.gitea.io/gitea "Go Report Card")
-[![](https://pkg.go.dev/badge/code.gitea.io/gitea?status.svg)](https://pkg.go.dev/code.gitea.io/gitea "GoDoc")
-[![](https://img.shields.io/github/release/go-gitea/gitea.svg)](https://github.com/go-gitea/gitea/releases/latest "GitHub release")
-[![](https://www.codetriage.com/go-gitea/gitea/badges/users.svg)](https://www.codetriage.com/go-gitea/gitea "Help Contribute to Open Source")
-[![](https://opencollective.com/gitea/tiers/backers/badge.svg?label=backers&color=brightgreen)](https://opencollective.com/gitea "Become a backer/sponsor of gitea")
-[![](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT "License: MIT")
-[![Contribute with Gitpod](https://img.shields.io/badge/Contribute%20with-Gitpod-908a85?logo=gitpod&color=green)](https://gitpod.io/#https://github.com/go-gitea/gitea)
-[![](https://badges.crowdin.net/gitea/localized.svg)](https://translate.gitea.com "Crowdin")
+> A Git service designed specifically for Scratch visual programming projects, based on Gitea.
 
-[繁體中文](./README.zh-tw.md) | [简体中文](./README.zh-cn.md)
+BlockCommit is an exclusive Git designed specifically for Scratch visual programming projects. Adapt to Scratch project file formats, provide easy-to-use version tracking, submission, and collaboration capabilities, allowing Scratch developers to easily implement project version management.
+
+**Topics**: git · backend · gitea · scratch · scratch3 · turbowarp
+
+## About
+
+BlockCommit is based on [Gitea](https://github.com/go-gitea/gitea) and provides specialized support for Scratch/TurboWarp `.sb3` project files:
+
+- **SB3 Project Support**: Native support for Scratch 3.0 project files with visual diff display
+- **Block-Level Diff**: Semantic diff visualization for Scratch blocks using ScratchBlocks syntax
+- **Multi-Language Support**: Available in multiple languages for international Scratch communities
+- **Easy Collaboration**: Seamless version control for Scratch projects
+- **Self-Hosted**: Deploy your own BlockCommit instance for privacy and control
+
+As BlockCommit is written in Go, it works across **all** the platforms and architectures that are supported by Go, including Linux, macOS, and Windows on x86, amd64, ARM and PowerPC architectures.
+
+## Features
+
+### Scratch Project Support
+
+- **SB3 File Parsing**: Automatic parsing and analysis of Scratch project files
+- **Visual Block Diff**: Display block changes in an intuitive visual format
+- **Script Tracking**: Track script additions, modifications, and deletions
+- **Asset Management**: Track changes to costumes, sounds, and other assets
+- **Variable & List Diff**: Monitor variable and list changes across versions
+
+### Core Git Features
+
+- Full Git integration with branch management, pull requests, and issue tracking
+- Collaborative code review and discussion
+- Wiki and project documentation
+- CI/CD integration with GitHub Actions compatibility
+- Team and organization management
+
+## Building
+
+From the root of the source tree, run:
+
+    TAGS="bindata sqlite sqlite_unlock_notify" make build
+
+The `build` target is split into two sub-targets:
+
+- `make backend` which requires [Go Stable](https://go.dev/dl/), the required version is defined in [go.mod](/go.mod).
+- `make frontend` which requires [Node.js LTS](https://nodejs.org/en/download/) or greater and [pnpm](https://pnpm.io/installation).
+
+## Using
+
+After building, a binary file named `gitea` will be generated in the root of the source tree by default. To run it, use:
+
+    ./gitea web
+
+Then access BlockCommit at `http://localhost:3000` (default port).
+
+## SB3 Diff Examples
+
+When viewing diffs for `.sb3` files, BlockCommit provides:
+
+- **Script Changes**: Visual display of added, modified, and deleted scripts
+- **Block-Level Diff**: Detailed view of individual block changes
+- **Summary Statistics**: Quick overview of project changes (targets, scripts, blocks, variables, etc.)
+- **Asset Tracking**: Changes to costumes, sounds, and other resources
+
+## Contributing
+
+Expected workflow is: Fork -> Patch -> Push -> Pull Request
+
+> [!NOTE]
+>
+> 1. **YOU MUST READ THE [CONTRIBUTORS GUIDE](CONTRIBUTING.md) BEFORE STARTING TO WORK ON A PULL REQUEST.**
+> 2. If you have found a vulnerability in the project, please write privately to the maintainer.
+
+## Authors
+
+- **Maintainer**: [NeuronPulse](https://github.com/NeuronPulse)
+- **Original Project**: [Gitea](https://github.com/go-gitea/gitea)
+
+## License
+
+This project is licensed under the MIT License.
+See the [LICENSE](LICENSE) file for the full license text.
+
+## Acknowledgments
+
+BlockCommit is based on [Gitea](https://github.com/go-gitea/gitea), a community-managed lightweight code hosting solution written in Go.
+
+Thanks to:
+- The [Gitea](https://github.com/go-gitea/gitea) community for the excellent codebase
+- [scratchblocks](https://github.com/scratchblocks/scratchblocks) for block visualization
+- [parse-sb3-blocks](https://github.com/apple502j/parse-sb3-blocks) for SB3 parsing utilities
 
 ## Purpose
 
