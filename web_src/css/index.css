@@ -46,6 +46,7 @@
 @import "./features/cropper.css";
 @import "./features/console.css";
 @import "./features/captcha.css";
+@import "./features/scratchblocks.css";
 
 @import "./markup/content.css";
 @import "./markup/codeblock.css";

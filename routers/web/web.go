@@ -1582,7 +1582,7 @@ func registerWebRoutes(m *web.Router) {
 			m.Get("/tag/*", context.RepoRefByType(git.RefTypeTag), repo.SingleDownloadOrLFS)
 			m.Get("/commit/*", context.RepoRefByType(git.RefTypeCommit), repo.SingleDownloadOrLFS)
 			m.Get("/*", context.RepoRefByType(""), repo.SingleDownloadOrLFS) // "/*" route is deprecated, and kept for backward compatibility
-		}, repo.MustBeNotEmpty)
+		}, repo.MustBeNotEmpty, optionsCorsHandler())
 
 		m.Group("/raw", func() {
 			m.Get("/blob/{sha}", repo.DownloadByID)
@@ -1590,7 +1590,7 @@ func registerWebRoutes(m *web.Router) {
 			m.Get("/tag/*", context.RepoRefByType(git.RefTypeTag), repo.SingleDownload)
 			m.Get("/commit/*", context.RepoRefByType(git.RefTypeCommit), repo.SingleDownload)
 			m.Get("/*", context.RepoRefByType(""), repo.SingleDownload) // "/*" route is deprecated, and kept for backward compatibility
-		}, repo.MustBeNotEmpty)
+		}, repo.MustBeNotEmpty, optionsCorsHandler())
 
 		m.Group("/render", func() {
 			m.Get("/branch/*", context.RepoRefByType(git.RefTypeBranch), repo.RenderFile)

@@ -9,6 +9,7 @@ import (
 	"image"
 	"io"
 	"path"
+	"path/filepath"
 	"strings"
 
 	git_model "code.gitea.io/gitea/models/git"
@@ -232,14 +233,17 @@ func prepareFileView(ctx *context.Context, entry *git.TreeEntry) {
 	// TODO: in the future maybe we need more accurate flags, for example:
 	// * IsRepresentableAsText: some files are text, some are not
 	// * IsRenderableXxx: some files are rendered by backend "markup" engine, some are rendered by frontend (pdf, 3d)
-	// * DefaultViewMode: when there is no "display" query parameter, which view mode should be used by default, source or rendered
+	// * DefaultViewMode: when there no "display" query parameter, which view mode should be used by default, source or rendered
+
+	// Check if this is an SB3 file - SB3 files should not be limited by file size
+	isSb3File := strings.ToLower(filepath.Ext(ctx.Repo.TreePath)) == ".sb3"
 
 	contentReader := io.MultiReader(bytes.NewReader(buf), dataRc)
 	if fInfo.st.IsRepresentableAsText() {
 		contentReader = charset.ToUTF8WithFallbackReader(contentReader, charset.ConvertOpts{})
 	}
 	switch {
-	case fInfo.blobOrLfsSize >= setting.UI.MaxDisplayFileSize:
+	case !isSb3File && fInfo.blobOrLfsSize >= setting.UI.MaxDisplayFileSize:
 		ctx.Data["IsFileTooLarge"] = true
 	case handleFileViewRenderMarkup(ctx, buf, contentReader):
 		// it also sets ctx.Data["FileContent"] and more

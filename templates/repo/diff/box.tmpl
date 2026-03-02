@@ -1,4 +1,11 @@
 {{$showFileTree := (and (not .DiffNotAvailable) (gt .DiffShortStat.NumFiles 1))}}
+{{/* Check if all files are SB3 files */}}
+{{$allSb3Files := true}}
+{{range .Diff.Files}}
+	{{if not (call $.IsSb3File .)}}
+		{{$allSb3Files = false}}
+	{{end}}
+{{end}}
 <div>
 	<div class="diff-detail-box">
 		<div class="flex-text-block tw-flex-wrap tw-ml-0.5">
@@ -19,7 +26,11 @@
 			{{end}}
 			{{if not .DiffNotAvailable}}
 				<div class="diff-detail-stats tw-flex tw-items-center tw-flex-wrap">
-					{{svg "octicon-diff" 16 "tw-mr-1"}}{{ctx.Locale.Tr "repo.diff.stats_desc" .DiffShortStat.NumFiles .DiffShortStat.TotalAddition .DiffShortStat.TotalDeletion}}
+					{{if $allSb3Files}}
+						{{svg "octicon-diff" 16 "tw-mr-1"}}共修改 {{.DiffShortStat.NumFiles}} 个 Scratch 项目
+					{{else}}
+						{{svg "octicon-diff" 16 "tw-mr-1"}}{{ctx.Locale.Tr "repo.diff.stats_desc" .DiffShortStat.NumFiles .DiffShortStat.TotalAddition .DiffShortStat.TotalDeletion}}
+					{{end}}
 				</div>
 			{{end}}
 		</div>
@@ -78,7 +89,8 @@
 					{{$sniffedTypeHead := call $.GetSniffedTypeForBlob $blobHead}}
 					{{$isImage:= or (call $.IsSniffedTypeAnImage $sniffedTypeBase) (call $.IsSniffedTypeAnImage $sniffedTypeHead)}}
 					{{$isCsv := (call $.IsCsvFile $file)}}
-					{{$showFileViewToggle := or $isImage (and (not $file.IsIncomplete) $isCsv)}}
+					{{$isSb3 := (call $.IsSb3File $file)}}
+					{{$showFileViewToggle := or $isImage (and (not $file.IsIncomplete) (or $isCsv $isSb3))}}
 					{{$isExpandable := or (gt $file.Addition 0) (gt $file.Deletion 0) $file.IsBin}}
 					{{$isReviewFile := and $.IsSigned $.PageIsPullFiles (not $.Repository.IsArchived) $.IsShowingAllCommits}}
 					<div class="diff-file-box file-content {{TabSizeClass $.Editorconfig $file.Name}} tw-mt-0" id="diff-{{$file.NameHash}}" data-old-filename="{{$file.OldName}}" data-new-filename="{{$file.Name}}" {{if or ($file.ShouldBeHidden) (not $isExpandable)}}data-folded="true"{{end}}>
@@ -168,6 +180,21 @@
 												{{ctx.Locale.Tr "repo.diff.file_suppressed"}}
 												<a class="ui basic tiny button diff-load-button" data-href="?file-only=true&files={{$file.Name}}&files={{$file.OldName}}">{{ctx.Locale.Tr "repo.diff.load"}}</a>
 											{{end}}
+										{{else if $isSb3}}
+											<div class="tw-p-3">
+												{{svg "octicon-file-zip" 32 "tw-mr-2"}}
+												<strong>Scratch 项目文件 (.sb3)</strong>
+												<p class="tw-mt-2 tw-text-light-2">
+													{{ctx.Locale.Tr "repo.diff.file_byte_size"}}: <span class="text">
+														{{if $blobBase}}{{FileSize $blobBase.Size}}{{end}}
+														{{if and $blobBase $blobHead}} → {{end}}
+														{{if $blobHead}}{{FileSize $blobHead.Size}}{{end}}
+													</span>
+												</p>
+												<p class="tw-text-light-2">
+													这是一个 Scratch 项目文件（ZIP 格式），请切换到<strong>渲染模式</strong>查看项目结构的语义化差异。
+												</p>
+											</div>
 										{{else}}
 											{{ctx.Locale.Tr "repo.diff.bin_not_shown"}}
 										{{end}}
@@ -199,6 +226,8 @@
 									<table class="chroma tw-w-full">
 										{{if $isImage}}
 											{{template "repo/diff/image_diff" dict "file" . "root" $ "blobBase" $blobBase "blobHead" $blobHead "sniffedTypeBase" $sniffedTypeBase "sniffedTypeHead" $sniffedTypeHead}}
+										{{else if $isSb3}}
+											{{template "repo/diff/sb3_diff" dict "file" . "root" $ "blobBase" $blobBase "blobHead" $blobHead}}
 										{{else}}
 											{{template "repo/diff/csv_diff" dict "file" . "root" $ "blobBase" $blobBase "blobHead" $blobHead "sniffedTypeBase" $sniffedTypeBase "sniffedTypeHead" $sniffedTypeHead}}
 										{{end}}

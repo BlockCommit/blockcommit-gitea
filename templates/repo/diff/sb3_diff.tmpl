@@ -1,0 +1,145 @@
+<tr>
+	<td>
+		<style>
+		.sb3-diff-container { padding: 1rem; }
+		.sb3-diff-summary h4 { margin: 0 0 1rem 0; font-weight: 600; }
+		.sb3-diff-stats { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
+		.sb3-stat-item { display: flex; align-items: center; gap: 0.5rem; }
+		.sb3-stat-label { color: var(--color-text); }
+		.sb3-stat-value { display: flex; gap: 0.25rem; }
+		.sb3-stat-value .text.green { color: var(--color-green); }
+		.sb3-stat-value .text.red { color: var(--color-red); }
+		.sb3-stat-value .text.yellow { color: var(--color-yellow-dark-1); }
+		.sb3-diff-changes h4 { margin: 0 0 1rem 0; font-weight: 600; }
+		.sb3-target-section { margin-bottom: 1.5rem; border: 1px solid var(--color-secondary); border-radius: 4px; overflow: hidden; }
+		.sb3-target-header { padding: 0.75rem 1rem; background: var(--color-box-header); border-bottom: 1px solid var(--color-secondary); }
+		.sb3-target-name { font-weight: 600; }
+		.sb3-change-item { padding: 0.75rem 1rem; border-bottom: 1px solid var(--color-secondary-light-1); }
+		.sb3-change-item:last-child { border-bottom: none; }
+		.sb3-change-icon { margin-right: 0.5rem; }
+		.sb3-change-detail { margin-top: 0.5rem; }
+		.sb3-change-detail pre { margin: 0.5rem 0; padding: 0.5rem; background: var(--color-secondary-light-2); border-radius: 4px; overflow-x: auto; }
+		.sb3-change-fingerprint { font-size: 0.85rem; color: var(--color-text-light-2); }
+		</style>
+		{{$result := call .root.CreateSb3Diff .file .blobBase .blobHead}}
+		{{if $result.Error}}
+			<div class="ui error message">{{$result.Error}}</div>
+		{{else if $result.Diff}}
+			{{if $result.Diff.HasChanges}}
+				<div class="sb3-diff-container">
+					<!-- Summary Section -->
+					<div class="sb3-diff-summary">
+						<h4>📊 变更摘要</h4>
+						<div class="sb3-diff-stats">
+							<div class="sb3-stat-item">
+								<span class="sb3-stat-label">🎭 角色</span>
+								<span class="sb3-stat-value">
+									{{if gt $result.Diff.Summary.TargetsAdded 0}}<span class="text green">+{{$result.Diff.Summary.TargetsAdded}}</span>{{end}}
+									{{if gt $result.Diff.Summary.TargetsDeleted 0}}<span class="text red">-{{$result.Diff.Summary.TargetsDeleted}}</span>{{end}}
+								</span>
+							</div>
+							<div class="sb3-stat-item">
+								<span class="sb3-stat-label">📜 脚本</span>
+								<span class="sb3-stat-value">
+									{{if gt $result.Diff.Summary.ScriptsAdded 0}}<span class="text green">+{{$result.Diff.Summary.ScriptsAdded}}</span>{{end}}
+									{{if gt $result.Diff.Summary.ScriptsDeleted 0}}<span class="text red">-{{$result.Diff.Summary.ScriptsDeleted}}</span>{{end}}
+									{{if gt $result.Diff.Summary.ScriptsModified 0}}<span class="text yellow">~{{$result.Diff.Summary.ScriptsModified}}</span>{{end}}
+								</span>
+							</div>
+							<div class="sb3-stat-item">
+								<span class="sb3-stat-label">🧩 积木</span>
+								<span class="sb3-stat-value">
+									{{if gt $result.Diff.Summary.BlocksAdded 0}}<span class="text green">+{{$result.Diff.Summary.BlocksAdded}}</span>{{end}}
+									{{if gt $result.Diff.Summary.BlocksDeleted 0}}<span class="text red">-{{$result.Diff.Summary.BlocksDeleted}}</span>{{end}}
+									{{if gt $result.Diff.Summary.BlocksModified 0}}<span class="text yellow">~{{$result.Diff.Summary.BlocksModified}}</span>{{end}}
+								</span>
+							</div>
+							<div class="sb3-stat-item">
+								<span class="sb3-stat-label">📝 变量</span>
+								<span class="sb3-stat-value">
+									{{if gt $result.Diff.Summary.VariablesAdded 0}}<span class="text green">+{{$result.Diff.Summary.VariablesAdded}}</span>{{end}}
+									{{if gt $result.Diff.Summary.VariablesDeleted 0}}<span class="text red">-{{$result.Diff.Summary.VariablesDeleted}}</span>{{end}}
+									{{if gt $result.Diff.Summary.VariablesModified 0}}<span class="text yellow">~{{$result.Diff.Summary.VariablesModified}}</span>{{end}}
+								</span>
+							</div>
+							<div class="sb3-stat-item">
+								<span class="sb3-stat-label">📋 列表</span>
+								<span class="sb3-stat-value">
+									{{if gt $result.Diff.Summary.ListsAdded 0}}<span class="text green">+{{$result.Diff.Summary.ListsAdded}}</span>{{end}}
+									{{if gt $result.Diff.Summary.ListsDeleted 0}}<span class="text red">-{{$result.Diff.Summary.ListsDeleted}}</span>{{end}}
+									{{if gt $result.Diff.Summary.ListsModified 0}}<span class="text yellow">~{{$result.Diff.Summary.ListsModified}}</span>{{end}}
+								</span>
+							</div>
+							<div class="sb3-stat-item">
+								<span class="sb3-stat-label">👕 造型</span>
+								<span class="sb3-stat-value">
+									{{if gt $result.Diff.Summary.CostumesAdded 0}}<span class="text green">+{{$result.Diff.Summary.CostumesAdded}}</span>{{end}}
+									{{if gt $result.Diff.Summary.CostumesDeleted 0}}<span class="text red">-{{$result.Diff.Summary.CostumesDeleted}}</span>{{end}}
+									{{if gt $result.Diff.Summary.CostumesModified 0}}<span class="text yellow">~{{$result.Diff.Summary.CostumesModified}}</span>{{end}}
+								</span>
+							</div>
+							<div class="sb3-stat-item">
+								<span class="sb3-stat-label">🔊 声音</span>
+								<span class="sb3-stat-value">
+									{{if gt $result.Diff.Summary.SoundsAdded 0}}<span class="text green">+{{$result.Diff.Summary.SoundsAdded}}</span>{{end}}
+									{{if gt $result.Diff.Summary.SoundsDeleted 0}}<span class="text red">-{{$result.Diff.Summary.SoundsDeleted}}</span>{{end}}
+									{{if gt $result.Diff.Summary.SoundsModified 0}}<span class="text yellow">~{{$result.Diff.Summary.SoundsModified}}</span>{{end}}
+								</span>
+							</div>
+						</div>
+					</div>
+
+					<!-- Changes by Target -->
+					<div class="sb3-diff-changes">
+						<h4>📝 按角色查看更改</h4>
+						{{$diffByTarget := $result.Diff.GetSb3DiffByTarget}}
+						{{range $targetName, $items := $diffByTarget}}
+							<div class="sb3-target-section">
+								<div class="sb3-target-header">
+									<span class="sb3-target-name">{{$targetName}}</span>
+								</div>
+
+								{{range $item := $items}}
+									<div class="sb3-change-item">
+										<span class="sb3-change-icon">{{$item.GetDisplayLabel}}</span>
+										<span class="sb3-change-detail">
+											{{if $item.Old}}
+												<div class="sb3-blocks-old">
+													<div class="sb3-blocks-label">删除:</div>
+													<div class="sb3-blocks-container">
+														<pre class="blocks" data-locale="zh-cn">{{$item.GetScratchBlocksOld}}</pre>
+													</div>
+												</div>
+											{{end}}
+											{{if $item.New}}
+												<div class="sb3-blocks-new">
+													<div class="sb3-blocks-label">添加:</div>
+													<div class="sb3-blocks-container">
+														<pre class="blocks" data-locale="zh-cn">{{$item.GetScratchBlocksNew}}</pre>
+													</div>
+												</div>
+											{{end}}
+											{{if $item.Fingerprint}}
+												<span class="sb3-change-fingerprint">🔍 指纹: {{$item.Fingerprint}}</span>
+											{{end}}
+										</span>
+									</div>
+								{{end}}
+							</div>
+						{{end}}
+					</div>
+				</div>
+			{{else}}
+				<div class="ui center aligned segment">
+					<div class="ui icon header">
+						<i class="check circle outline icon"></i>
+						<div class="content">
+							没有检测到变更
+							<div class="sub header">该文件的两个版本相同</div>
+						</div>
+					</div>
+				</div>
+			{{end}}
+		{{end}}
+	</td>
+</tr>

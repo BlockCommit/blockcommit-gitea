@@ -1,0 +1,301 @@
+/**
+ * ScratchBlocks styling for SB3 diff visualization
+ */
+
+/* SB3 Diff Container */
+.sb3-diff-container {
+  padding: 1rem;
+  font-family: var(--fonts-regular);
+}
+
+/* Summary Section */
+.sb3-diff-summary h4 {
+  margin: 0 0 1rem 0;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* Statistics Grid */
+.sb3-diff-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--color-box-body);
+  border-radius: 4px;
+  border: 1px solid var(--color-secondary);
+}
+
+.sb3-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--color-secondary-light-2);
+  border-radius: 4px;
+}
+
+.sb3-stat-label {
+  color: var(--color-text-light-2);
+  font-size: 0.9rem;
+}
+
+.sb3-stat-value {
+  display: flex;
+  gap: 0.25rem;
+  font-weight: 600;
+}
+
+.sb3-stat-value .text.green {
+  color: var(--color-green);
+}
+
+.sb3-stat-value .text.red {
+  color: var(--color-red);
+}
+
+.sb3-stat-value .text.yellow {
+  color: var(--color-yellow-dark-1);
+}
+
+/* Changes Section */
+.sb3-diff-changes h4 {
+  margin: 0 0 1rem 0;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* Target Sections */
+.sb3-target-section {
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--color-secondary);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--color-box-body);
+}
+
+.sb3-target-header {
+  padding: 0.75rem 1rem;
+  background: var(--color-box-header);
+  border-bottom: 1px solid var(--color-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sb3-target-icon {
+  font-size: 1.2rem;
+}
+
+.sb3-target-name {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* Change Items */
+.sb3-change-item {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-secondary-light-1);
+}
+
+.sb3-change-item:last-child {
+  border-bottom: none;
+}
+
+.sb3-change-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.sb3-change-icon {
+  font-size: 1.1rem;
+}
+
+.sb3-change-type {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* ScratchBlocks Containers */
+.sb3-blocks-container {
+  margin-top: 0.75rem;
+}
+
+.sb3-blocks-old,
+.sb3-blocks-new {
+  margin-bottom: 0.75rem;
+}
+
+.sb3-blocks-label {
+  font-size: 0.85rem;
+  color: var(--color-text-light-2);
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.sb3-blocks-old .sb3-blocks-label {
+  color: var(--color-red);
+}
+
+.sb3-blocks-new .sb3-blocks-label {
+  color: var(--color-green);
+}
+
+/* ScratchBlocks Styling Override */
+pre.blocks {
+  background: var(--color-secondary-light-2);
+  border: 1px solid var(--color-secondary);
+  border-radius: 4px;
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 0.5rem 0;
+}
+
+pre.blocks svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Inline ScratchBlocks */
+code.sb3-block-inline {
+  background: var(--color-secondary-light-2);
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  font-family: var(--fonts-mono);
+}
+
+/* Change Detail Sections */
+.sb3-change-detail {
+  margin-top: 0.5rem;
+}
+
+.sb3-change-detail pre {
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  background: var(--color-secondary-light-2);
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.sb3-change-fingerprint {
+  font-size: 0.85rem;
+  color: var(--color-text-light-2);
+  margin-top: 0.5rem;
+  font-family: var(--fonts-mono);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .sb3-diff-stats {
+    flex-direction: column;
+  }
+  
+  .sb3-stat-item {
+    width: 100%;
+  }
+}
+
+/* Loading State */
+.sb3-blocks-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--color-text-light-2);
+}
+
+.sb3-blocks-loading::before {
+  content: '';
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.5rem;
+  border: 2px solid var(--color-secondary);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error State */
+.sb3-blocks-error {
+  padding: 1rem;
+  background: var(--color-red-bg);
+  border: 1px solid var(--color-red);
+  border-radius: 4px;
+  color: var(--color-red-text);
+}
+
+/* Scrollbar Styling */
+pre.blocks::-webkit-scrollbar {
+  height: 8px;
+}
+
+pre.blocks::-webkit-scrollbar-track {
+  background: var(--color-secondary-light-1);
+  border-radius: 4px;
+}
+
+pre.blocks::-webkit-scrollbar-thumb {
+  background: var(--color-secondary);
+  border-radius: 4px;
+}
+
+pre.blocks::-webkit-scrollbar-thumb:hover {
+  background: var(--color-secondary-dark-1);
+}
+
+/* Animation for Changes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sb3-change-item {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.sb3-change-item:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.sb3-change-item:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.sb3-change-item:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+/* Diff Comparison View */
+.sb3-diff-comparison {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.sb3-diff-comparison .sb3-blocks-old,
+.sb3-diff-comparison .sb3-blocks-new {
+  margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .sb3-diff-comparison {
+    grid-template-columns: 1fr;
+  }
+}

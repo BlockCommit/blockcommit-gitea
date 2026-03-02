@@ -54,6 +54,7 @@ import {initRepoRecentCommits} from './features/recent-commits.ts';
 import {initRepoDiffCommitBranchesAndTags} from './features/repo-diff-commit.ts';
 import {initGlobalSelectorObserver} from './modules/observer.ts';
 import {initRepositorySearch} from './features/repo-search.ts';
+import {initSb3DiffRenderer} from './features/scratchblocks.ts';
 import {initColorPickers} from './features/colorpicker.ts';
 import {initAdminSelfCheck} from './features/admin/selfcheck.ts';
 import {initOAuth2SettingsDisableCheckbox} from './features/oauth2-settings.ts';
@@ -159,6 +160,8 @@ const initPerformanceTracer = callInitFunctions([
   initOAuth2SettingsDisableCheckbox,
 
   initRepoFileView,
+
+  initSb3DiffRenderer,
 ]);
 
 // it must be the last one, then the "querySelectorAll" only needs to be executed once for global init functions.
