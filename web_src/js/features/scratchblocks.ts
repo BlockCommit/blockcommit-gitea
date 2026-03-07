@@ -18,7 +18,7 @@ export async function loadScratchblocks(): Promise<void> {
 /**
  * Load translations for scratchblocks
  */
-export async function loadScratchblocksTranslations(locale: string = 'en'): Promise<void> {
+export async function loadScratchblocksTranslations(): Promise<void> {
   if (translationsLoaded) return;
 
   try {
@@ -135,9 +135,8 @@ export async function initSb3DiffRenderer(): Promise<void> {
   }
 
   try {
-    // Load translations based on page language
-    const htmlLang = document.documentElement.lang || 'en';
-    await loadScratchblocksTranslations(htmlLang);
+    // Load translations
+    await loadScratchblocksTranslations();
 
     // Render scratchblocks
     await renderScratchblocks({
