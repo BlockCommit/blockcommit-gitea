@@ -364,6 +364,9 @@ func prepareRepoViewContent(ctx *context.Context, refTypeNameSubURL string) {
 	ctx.Data["PageIsViewCode"] = true
 	ctx.Data["RepositoryUploadEnabled"] = setting.Repository.Upload.Enabled // show Upload File button or menu item
 
+	// Initialize PullRequestCtx for "New Pull Request" button
+	context.InitRepoPullRequestCtx(ctx, ctx.Repo.Repository, ctx.Repo.Repository)
+
 	// prepare the tree path navigation
 	var treeNames, paths []string
 	branchLink := ctx.Repo.RepoLink + "/src/" + refTypeNameSubURL

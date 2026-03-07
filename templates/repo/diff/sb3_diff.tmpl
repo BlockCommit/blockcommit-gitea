@@ -18,7 +18,7 @@
 		.sb3-change-item:last-child { border-bottom: none; }
 		.sb3-change-icon { margin-right: 0.5rem; }
 		.sb3-change-detail { margin-top: 0.5rem; }
-		.sb3-change-detail pre { margin: 0.5rem 0; padding: 0.5rem; background: var(--color-secondary-light-2); border-radius: 4px; overflow-x: auto; }
+		.sb3-change-detail pre { margin: 0.5rem 0; padding: 0.5rem; background: var(--color-secondary-light-2); border-radius: 4px; overflow-x: auto; white-space: pre; }
 		.sb3-change-fingerprint { font-size: 0.85rem; color: var(--color-text-light-2); }
 		</style>
 		{{$result := call .root.CreateSb3Diff .file .blobBase .blobHead}}
@@ -107,7 +107,7 @@
 												<div class="sb3-blocks-old">
 													<div class="sb3-blocks-label">删除:</div>
 													<div class="sb3-blocks-container">
-														<pre class="blocks" data-locale="zh-cn">{{$item.GetScratchBlocksOld}}</pre>
+														<pre class="blocks" data-locale="zh-cn">{{$item.GetScratchBlocksOldSafe}}</pre>
 													</div>
 												</div>
 											{{end}}
@@ -115,9 +115,11 @@
 												<div class="sb3-blocks-new">
 													<div class="sb3-blocks-label">添加:</div>
 													<div class="sb3-blocks-container">
-														<pre class="blocks" data-locale="zh-cn">{{$item.GetScratchBlocksNew}}</pre>
+														<pre class="blocks" data-locale="zh-cn">{{$item.GetScratchBlocksNewSafe}}</pre>
 													</div>
 												</div>
+												<!-- Debug: Show raw text info -->
+												<div style="display:none;" class="sb3-debug-info" data-raw="{{$item.GetScratchBlocksNew}}"></div>
 											{{end}}
 											{{if $item.Fingerprint}}
 												<span class="sb3-change-fingerprint">🔍 指纹: {{$item.Fingerprint}}</span>

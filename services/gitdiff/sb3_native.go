@@ -577,8 +577,95 @@ func parseScripts(blocks map[string]RawBlock, topLevelIDs []string) []ScriptText
 	return scripts
 }
 
-// parseScript parses a single script from a top-level block
+// parseScript parses a single script from a top-level block using improved V2 parser
 func parseScript(blocks map[string]RawBlock, topID string) ScriptText {
+	// Use the improved V2 parser
+	parser := NewSB3ParserV2(ParserOptions{
+		Locale:        "en",
+		Tabs:          "    ",
+		VariableStyle: VariableStyleNone,
+	})
+
+	// Parse all blocks
+	if err := parser.ParseBlocks(blocks); err != nil {
+		// Fall back to old parser if V2 fails
+		return parseScriptLegacy(blocks, topID)
+	}
+
+	// Convert script to ScratchBlocks syntax
+	scriptText := parser.ToScratchblocks(topID)
+	
+	// Debug: Check if the returned text has newlines
+	// The parser should always add newlines between blocks
+	if len(scriptText) > 0 && !strings.Contains(scriptText, "\n") {
+		// This indicates a problem with the parser - it returned text without newlines
+		// Force rebuild with newlines as fallback
+		scriptText = rebuildScriptWithNewlines(blocks, topID, parser)
+	}
+
+	// Parse individual blocks for diff tracking using V2 parser
+	var blocksText []BlockText
+	currentID := topID
+	depth := 0
+
+	for currentID != "" {
+		block, exists := blocks[currentID]
+		if !exists {
+			break
+		}
+
+		// Use V2 parser for individual block text to get proper variable/list formatting
+		blockText := generateBlockTextV2(currentID, block, parser)
+		blocksText = append(blocksText, BlockText{
+			Text:        blockText,
+			Fingerprint: generateFingerprint(blockText),
+			Depth:       depth,
+			Original:    block,
+		})
+
+		// Update depth for C-blocks
+		if isCBlockOpcode(block.Opcode) {
+			depth++
+		} else if isEBlockOpcode(block.Opcode) {
+			// E-blocks handle else substack
+			depth++
+		} else if block.Parent != nil {
+			// Check if this block is inside a C-block
+			if parentBlock, parentExists := blocks[*block.Parent]; parentExists {
+				if isCBlockOpcode(parentBlock.Opcode) || isEBlockOpcode(parentBlock.Opcode) {
+					depth = 1 // Inside a C-block
+				}
+			}
+		}
+
+		if block.Next != nil {
+			currentID = *block.Next
+		} else {
+			currentID = ""
+		}
+	}
+
+	return ScriptText{
+		Text:        strings.TrimSpace(scriptText),
+		Fingerprint: generateFingerprint(scriptText),
+		Blocks:      blocksText,
+		TopID:       topID,
+	}
+}
+
+// generateBlockTextV2 generates block text using the V2 parser
+func generateBlockTextV2(blockID string, block RawBlock, parser *SB3ParserV2) string {
+	// Get the parsed block from the parser using block ID
+	if connectable, exists := parser.blocks[blockID]; exists {
+		return connectable.ToScratchblocks(parser.options)
+	}
+	
+	// Fallback to legacy parser
+	return generateBlockTextLegacy(block)
+}
+
+// parseScriptLegacy parses a script using the legacy parser (fallback)
+func parseScriptLegacy(blocks map[string]RawBlock, topID string) ScriptText {
 	var textBuilder strings.Builder
 	var blocksText []BlockText
 
@@ -592,7 +679,7 @@ func parseScript(blocks map[string]RawBlock, topID string) ScriptText {
 		}
 
 		// Generate block text
-		blockText := generateBlockText(block)
+		blockText := generateBlockTextLegacy(block)
 		blocksText = append(blocksText, BlockText{
 			Text:        blockText,
 			Fingerprint: generateFingerprint(blockText),
@@ -600,11 +687,11 @@ func parseScript(blocks map[string]RawBlock, topID string) ScriptText {
 			Original:    block,
 		})
 
+		// For sequential blocks, we don't increase depth
 		textBuilder.WriteString(strings.Repeat("  ", depth))
 		textBuilder.WriteString(blockText)
 		textBuilder.WriteString("\n")
 
-		depth++
 		if block.Next != nil {
 			currentID = *block.Next
 		} else {
@@ -621,10 +708,122 @@ func parseScript(blocks map[string]RawBlock, topID string) ScriptText {
 	}
 }
 
-// generateBlockText generates a text representation of a block using ScratchBlocks syntax
-func generateBlockText(block RawBlock) string {
+// generateBlockTextLegacy generates block text using the legacy parser
+func generateBlockTextLegacy(block RawBlock) string {
 	parser := NewScratchBlocksParser("en")
 	return parser.ConvertBlock(&block)
+}
+
+// rebuildScriptWithNewlines rebuilds a script with proper newlines from the parser
+func rebuildScriptWithNewlines(blocks map[string]RawBlock, topID string, parser *SB3ParserV2) string {
+	var result strings.Builder
+	currentID := topID
+	indentLevel := 0
+
+	for currentID != "" {
+		block, exists := blocks[currentID]
+		if !exists {
+			break
+		}
+
+		// Get block text from parser
+		if connectable, ok := parser.blocks[currentID]; ok {
+			blockText := connectable.ToScratchblocks(parser.options)
+			result.WriteString(strings.Repeat(parser.options.Tabs, indentLevel))
+			result.WriteString(blockText)
+			result.WriteString("\n")
+		}
+
+		// Handle C-blocks with substacks
+		if isCBlockOpcode(block.Opcode) || isEBlockOpcode(block.Opcode) {
+			substackID := parser.getSubstackID(block, "SUBSTACK")
+			if substackID != "" {
+				indentLevel++
+				substackText := rebuildSubstackWithNewlines(blocks, substackID, parser, indentLevel)
+				result.WriteString(substackText)
+				indentLevel--
+			}
+			substackID2 := parser.getSubstackID(block, "SUBSTACK2")
+			if substackID2 != "" {
+				indentLevel++
+				result.WriteString(strings.Repeat(parser.options.Tabs, indentLevel))
+				result.WriteString("else\n")
+				substackText := rebuildSubstackWithNewlines(blocks, substackID2, parser, indentLevel)
+				result.WriteString(substackText)
+				indentLevel--
+			}
+		}
+
+		if block.Next != nil {
+			currentID = *block.Next
+		} else {
+			currentID = ""
+		}
+	}
+
+	return result.String()
+}
+
+// rebuildSubstackWithNewlines rebuilds a substack with proper newlines
+func rebuildSubstackWithNewlines(blocks map[string]RawBlock, substackID string, parser *SB3ParserV2, indentLevel int) string {
+	var result strings.Builder
+	currentID := substackID
+
+	for currentID != "" {
+		if connectable, ok := parser.blocks[currentID]; ok {
+			blockText := connectable.ToScratchblocks(parser.options)
+			result.WriteString(strings.Repeat(parser.options.Tabs, indentLevel))
+			result.WriteString(blockText)
+			result.WriteString("\n")
+
+			// Handle nested C-blocks
+			if block, exists := blocks[currentID]; exists {
+				if isCBlockOpcode(block.Opcode) || isEBlockOpcode(block.Opcode) {
+					subSubstackID := parser.getSubstackID(block, "SUBSTACK")
+					if subSubstackID != "" {
+						indentLevel++
+						substackText := rebuildSubstackWithNewlines(blocks, subSubstackID, parser, indentLevel)
+						result.WriteString(substackText)
+						indentLevel--
+					}
+					subSubstackID2 := parser.getSubstackID(block, "SUBSTACK2")
+					if subSubstackID2 != "" {
+						indentLevel++
+						result.WriteString(strings.Repeat(parser.options.Tabs, indentLevel))
+						result.WriteString("else\n")
+						substackText := rebuildSubstackWithNewlines(blocks, subSubstackID2, parser, indentLevel)
+						result.WriteString(substackText)
+						indentLevel--
+					}
+				}
+			}
+		}
+
+		if block, exists := blocks[currentID]; exists && block.Next != nil {
+			currentID = *block.Next
+		} else {
+			currentID = ""
+		}
+	}
+
+	return result.String()
+}
+
+// isCBlockOpcode checks if an opcode is for a C-block
+func isCBlockOpcode(opcode string) bool {
+	cBlocks := map[string]bool{
+		"control_if":           true,
+		"control_repeat":       true,
+		"control_repeat_until": true,
+		"control_forever":      true,
+		"control_for_each":     true,
+	}
+	return cBlocks[opcode]
+}
+
+// isEBlockOpcode checks if an opcode is for an E-block (if-else)
+func isEBlockOpcode(opcode string) bool {
+	return opcode == "control_if_else"
 }
 
 // generateFingerprint generates a fingerprint from text

@@ -8,8 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"io"
 	"net/http"
 	"path"
+	"path/filepath"
 	"strings"
 
 	asymkey_model "code.gitea.io/gitea/models/asymkey"
@@ -422,6 +424,51 @@ func Diff(ctx *context.Context) {
 	pr, _ := issues_model.GetPullRequestByMergedCommit(ctx, ctx.Repo.Repository.ID, commitID)
 	if pr != nil {
 		ctx.Data["MergedPRIssueNumber"] = pr.Index
+	}
+
+	// Set IsSb3File function for template
+	ctx.Data["IsSb3File"] = func(diffFile *gitdiff.DiffFile) bool {
+		extension := strings.ToLower(filepath.Ext(diffFile.Name))
+		return extension == ".sb3"
+	}
+
+	// Set CreateSb3Diff function for template
+	ctx.Data["CreateSb3Diff"] = func(diffFile *gitdiff.DiffFile, baseBlob, headBlob *git.Blob) *gitdiff.Sb3DiffResult {
+		if diffFile == nil {
+			return &gitdiff.Sb3DiffResult{Error: ""}
+		}
+
+		var baseReader, headReader io.Reader
+		var closer io.Closer
+
+		if baseBlob != nil {
+			r, err := baseBlob.DataAsync()
+			if err != nil {
+				return &gitdiff.Sb3DiffResult{Error: err.Error()}
+			}
+			baseReader = r
+			closer = r
+		}
+		if headBlob != nil {
+			r, err := headBlob.DataAsync()
+			if err != nil {
+				if closer != nil {
+					closer.Close()
+				}
+				return &gitdiff.Sb3DiffResult{Error: err.Error()}
+			}
+			headReader = r
+			closer = r
+		}
+
+		result, err := gitdiff.CreateSb3Diff(diffFile, baseReader, headReader)
+		if closer != nil {
+			closer.Close()
+		}
+		if err != nil {
+			return &gitdiff.Sb3DiffResult{Error: err.Error()}
+		}
+		return result
 	}
 
 	ctx.HTML(http.StatusOK, tplCommitPage)

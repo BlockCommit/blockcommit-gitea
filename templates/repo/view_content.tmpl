@@ -20,7 +20,7 @@
 		"ShowViewAllRefsEntry" true
 	}}
 
-	{{if and .PullRequestCtx.CanCreateNewPull .RefFullName.IsBranch}}
+	{{if and .PullRequestCtx.CanCreateNewPullBool .RefFullName.IsBranch}}
 		{{$compareLink := .PullRequestCtx.MakeDefaultCompareLink .BranchName}}
 		<a id="new-pull-request" role="button" class="ui compact basic button" href="{{QueryBuild $compareLink "expand" 1}}"
 			data-tooltip-content="{{ctx.Locale.Tr "repo.pulls.compare_changes"}}">

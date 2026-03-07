@@ -45,6 +45,9 @@ type PullRequestContext struct {
 
 	canCreateNewPull    *bool
 	defaultTargetBranch *string
+
+	// Exported fields for template access
+	CanCreateNewPullBool bool
 }
 
 func (prc *PullRequestContext) SameRepo() bool {
@@ -456,6 +459,7 @@ func repoAssignment(ctx *Context, repo *repo_model.Repository) {
 func InitRepoPullRequestCtx(ctx *Context, base, head *repo_model.Repository) {
 	ctx.Repo.PullRequestCtx = &PullRequestContext{ctx: ctx}
 	ctx.Repo.PullRequestCtx.baseRepo, ctx.Repo.PullRequestCtx.headRepo = base, head
+	ctx.Repo.PullRequestCtx.CanCreateNewPullBool = ctx.Repo.PullRequestCtx.CanCreateNewPull()
 	ctx.Data["PullRequestCtx"] = ctx.Repo.PullRequestCtx
 }
 

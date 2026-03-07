@@ -5,7 +5,9 @@ package gitdiff
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
+	"strings"
 )
 
 // Sb3DiffType represents the type of a Scratch project change.
@@ -109,15 +111,26 @@ func (i *Sb3DiffItem) GetScratchBlocksOld() string {
 		return ""
 	}
 
-	// Try to parse as ScriptText to get ScratchBlocks syntax
-	var script ScriptText
-	if err := json.Unmarshal(*i.Old, &script); err == nil {
-		// If it's a script, return the text which is already in ScratchBlocks format
-		return script.Text
+	// For script type, try to parse as ScriptText to get ScratchBlocks syntax
+	if i.Type == Sb3DiffItemScript {
+		var script ScriptText
+		if err := json.Unmarshal(*i.Old, &script); err == nil {
+			// Return the scratchblocks syntax
+			return script.Text
+		}
 	}
 
-	// For other types, return formatted JSON
-	return i.GetFormattedOld()
+	// For block type, try to parse as RawBlock and convert to scratchblocks
+	if i.Type == Sb3DiffItemBlock {
+		var rawBlock RawBlock
+		if err := json.Unmarshal(*i.Old, &rawBlock); err == nil {
+			parser := NewScratchBlocksParser("en")
+			return parser.ConvertBlock(&rawBlock)
+		}
+	}
+
+	// For other types, try to format as readable text
+	return i.formatReadableText(i.Old, i.Type)
 }
 
 // GetScratchBlocksNew returns the new value in ScratchBlocks syntax format for visualization
@@ -126,15 +139,152 @@ func (i *Sb3DiffItem) GetScratchBlocksNew() string {
 		return ""
 	}
 
-	// Try to parse as ScriptText to get ScratchBlocks syntax
-	var script ScriptText
-	if err := json.Unmarshal(*i.New, &script); err == nil {
-		// If it's a script, return the text which is already in ScratchBlocks format
-		return script.Text
+	// For script type, try to parse as ScriptText to get ScratchBlocks syntax
+	if i.Type == Sb3DiffItemScript {
+		var script ScriptText
+		if err := json.Unmarshal(*i.New, &script); err == nil {
+			// Return the scratchblocks syntax
+			return script.Text
+		}
 	}
 
-	// For other types, return formatted JSON
-	return i.GetFormattedNew()
+	// For block type, try to parse as RawBlock and convert to scratchblocks
+	if i.Type == Sb3DiffItemBlock {
+		var rawBlock RawBlock
+		if err := json.Unmarshal(*i.New, &rawBlock); err == nil {
+			parser := NewScratchBlocksParser("en")
+			return parser.ConvertBlock(&rawBlock)
+		}
+	}
+
+	// For other types, try to format as readable text
+	return i.formatReadableText(i.New, i.Type)
+}
+
+// GetScratchBlocksOldSafe returns the old value with HTML-safe escaping that preserves newlines
+func (i *Sb3DiffItem) GetScratchBlocksOldSafe() string {
+	text := i.GetScratchBlocksOld()
+	return escapeHTMLPreserveWhitespace(text)
+}
+
+// GetScratchBlocksNewSafe returns the new value with HTML-safe escaping that preserves newlines
+func (i *Sb3DiffItem) GetScratchBlocksNewSafe() string {
+	text := i.GetScratchBlocksNew()
+	
+	// Log for debugging - check if text contains newlines
+	// This will help identify if the problem is in text generation or rendering
+	hasNewlines := strings.Contains(text, "\n")
+	if len(text) > 100 && !hasNewlines {
+		// Long text without newlines might indicate a problem
+		// For now, we'll return it as-is, but this could be improved
+	}
+	
+	escaped := escapeHTMLPreserveWhitespace(text)
+	return escaped
+}
+
+// escapeHTMLPreserveWhitespace escapes HTML special characters but preserves newlines and tabs
+func escapeHTMLPreserveWhitespace(text string) string {
+	var result strings.Builder
+	for _, r := range text {
+		switch r {
+		case '<':
+			result.WriteString("&lt;")
+		case '>':
+			result.WriteString("&gt;")
+		case '&':
+			result.WriteString("&amp;")
+		case '"':
+			result.WriteString("&quot;")
+		case '\'':
+			result.WriteString("&#39;")
+		default:
+			result.WriteRune(r)
+		}
+	}
+	return result.String()
+}
+
+// GetDebugText returns a debug version of the text with visible newlines for troubleshooting
+func (i *Sb3DiffItem) GetDebugText() string {
+	text := i.GetScratchBlocksNew()
+	// Replace newlines with visible markers for debugging
+	debugText := strings.ReplaceAll(text, "\n", " [NEWLINE] ")
+	return fmt.Sprintf("Length: %d, HasNewlines: %v, Text: %s", len(text), strings.Contains(text, "\n"), debugText)
+}
+
+// formatReadableText formats the value as readable text based on its type
+func (i *Sb3DiffItem) formatReadableText(data *json.RawMessage, itemType Sb3DiffItemType) string {
+	if data == nil {
+		return ""
+	}
+
+	var rawData any
+	if err := json.Unmarshal(*data, &rawData); err != nil {
+		return string(*data)
+	}
+
+	switch itemType {
+	case Sb3DiffItemTarget:
+		// Format target info
+		if target, ok := rawData.(map[string]any); ok {
+			name := getStringValue(target, "name")
+			return fmt.Sprintf("角色: %s", name)
+		}
+	case Sb3DiffItemVariable:
+		// Format variable info - handle both map and array formats
+		if variable, ok := rawData.(map[string]any); ok {
+			name := getStringValue(variable, "name")
+			value := fmt.Sprintf("%v", variable["value"])
+			return fmt.Sprintf("变量: %s = %s", name, value)
+		}
+		// Handle array format: ["name", value, ...]
+		if variable, ok := rawData.([]any); ok && len(variable) > 0 {
+			name := fmt.Sprintf("%v", variable[0])
+			return fmt.Sprintf("变量: %s", name)
+		}
+	case Sb3DiffItemList:
+		// Format list info - handle both map and array formats
+		if list, ok := rawData.(map[string]any); ok {
+			name := getStringValue(list, "name")
+			content := fmt.Sprintf("%v", list["content"])
+			return fmt.Sprintf("列表: %s = %s", name, content)
+		}
+		// Handle array format: ["name", content, ...]
+		if list, ok := rawData.([]any); ok && len(list) > 0 {
+			name := fmt.Sprintf("%v", list[0])
+			return fmt.Sprintf("列表: %s", name)
+		}
+	case Sb3DiffItemCostume:
+		// Format costume info
+		if costume, ok := rawData.(map[string]any); ok {
+			name := getStringValue(costume, "name")
+			return fmt.Sprintf("造型: %s", name)
+		}
+	case Sb3DiffItemSound:
+		// Format sound info
+		if sound, ok := rawData.(map[string]any); ok {
+			name := getStringValue(sound, "name")
+			return fmt.Sprintf("声音: %s", name)
+		}
+	}
+
+	// Fallback: return formatted JSON
+	formatted, err := json.MarshalIndent(rawData, "", "  ")
+	if err != nil {
+		return string(*data)
+	}
+	return string(formatted)
+}
+
+// getStringValue safely gets a string value from a map
+func getStringValue(data map[string]any, key string) string {
+	if val, ok := data[key]; ok {
+		if str, ok := val.(string); ok {
+			return str
+		}
+	}
+	return ""
 }
 
 // Sb3DiffSummary represents a summary of changes in a Scratch project diff.

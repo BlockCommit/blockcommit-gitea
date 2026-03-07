@@ -43,6 +43,11 @@ var BlockOpcodeMap = map[string]func(*RawBlock, *ScratchBlocksParser) string{
 		msg := p.getFieldValue(b, "BROADCAST_OPTION", "message1 v")
 		return fmt.Sprintf("when I receive [%s]", msg)
 	},
+	"event_whengreaterthan": func(b *RawBlock, p *ScratchBlocksParser) string {
+		operand := p.getInputValue(b, "OPERAND", "0")
+		option := p.getFieldValue(b, "OPTION", "timer")
+		return fmt.Sprintf("when [%s v] > (%s)", option, operand)
+	},
 	"event_broadcast": func(b *RawBlock, p *ScratchBlocksParser) string {
 		msg := p.getInputValue(b, "BROADCAST", "message1")
 		return fmt.Sprintf("broadcast [%s]", msg)
@@ -124,20 +129,36 @@ var BlockOpcodeMap = map[string]func(*RawBlock, *ScratchBlocksParser) string{
 	// Looks
 	"looks_say": func(b *RawBlock, p *ScratchBlocksParser) string {
 		msg := p.getInputValue(b, "MESSAGE", "Hello!")
+		// If the message is already a reporter (starts with '(' or '<'), use it directly
+		if strings.HasPrefix(msg, "(") || strings.HasPrefix(msg, "<") {
+			return fmt.Sprintf("say %s", msg)
+		}
 		return fmt.Sprintf("say [%s]", msg)
 	},
 	"looks_sayforsecs": func(b *RawBlock, p *ScratchBlocksParser) string {
 		msg := p.getInputValue(b, "MESSAGE", "Hello!")
 		secs := p.getInputValue(b, "SECS", "2")
+		// If the message is already a reporter (starts with '(' or '<'), use it directly
+		if strings.HasPrefix(msg, "(") || strings.HasPrefix(msg, "<") {
+			return fmt.Sprintf("say %s for (%s) seconds", msg, secs)
+		}
 		return fmt.Sprintf("say [%s] for (%s) seconds", msg, secs)
 	},
 	"looks_think": func(b *RawBlock, p *ScratchBlocksParser) string {
 		msg := p.getInputValue(b, "MESSAGE", "Hmm...")
+		// If the message is already a reporter (starts with '(' or '<'), use it directly
+		if strings.HasPrefix(msg, "(") || strings.HasPrefix(msg, "<") {
+			return fmt.Sprintf("think %s", msg)
+		}
 		return fmt.Sprintf("think [%s]", msg)
 	},
 	"looks_thinkforsecs": func(b *RawBlock, p *ScratchBlocksParser) string {
 		msg := p.getInputValue(b, "MESSAGE", "Hmm...")
 		secs := p.getInputValue(b, "SECS", "2")
+		// If the message is already a reporter (starts with '(' or '<'), use it directly
+		if strings.HasPrefix(msg, "(") || strings.HasPrefix(msg, "<") {
+			return fmt.Sprintf("think %s for (%s) seconds", msg, secs)
+		}
 		return fmt.Sprintf("think [%s] for (%s) seconds", msg, secs)
 	},
 	"looks_show": func(b *RawBlock, p *ScratchBlocksParser) string {
@@ -284,6 +305,14 @@ var BlockOpcodeMap = map[string]func(*RawBlock, *ScratchBlocksParser) string{
 	"sensing_distanceto": func(b *RawBlock, p *ScratchBlocksParser) string {
 		object := p.getInputValue(b, "DISTANCETOMENU", "_mouse_")
 		return fmt.Sprintf("distance to [%s v]", object)
+	},
+	"sensing_askandwait": func(b *RawBlock, p *ScratchBlocksParser) string {
+		question := p.getInputValue(b, "QUESTION", "What's your name?")
+		return fmt.Sprintf("ask [%s] and wait", question)
+	},
+	"sensing_setdragmode": func(b *RawBlock, p *ScratchBlocksParser) string {
+		mode := p.getInputValue(b, "DRAG_MODE", "draggable")
+		return fmt.Sprintf("set drag mode to [%s v]", mode)
 	},
 	"sensing_ask": func(b *RawBlock, p *ScratchBlocksParser) string {
 		question := p.getInputValue(b, "QUESTION", "What's your name?")
@@ -498,7 +527,7 @@ var BlockOpcodeMap = map[string]func(*RawBlock, *ScratchBlocksParser) string{
 		if b.Mutation != nil {
 			if mutation, ok := b.Mutation.(map[string]any); ok {
 				if proccode, ok := mutation["proccode"].(string); ok {
-					return proccode
+					return fmt.Sprintf("define %s", proccode)
 				}
 			}
 		}
@@ -508,19 +537,88 @@ var BlockOpcodeMap = map[string]func(*RawBlock, *ScratchBlocksParser) string{
 		if b.Mutation != nil {
 			if mutation, ok := b.Mutation.(map[string]any); ok {
 				if proccode, ok := mutation["proccode"].(string); ok {
-					// Extract arguments
-					args := []string{}
-					for key := range b.Inputs {
-						args = append(args, p.getInputValue(b, key, ""))
+					// Extract argument IDs from mutation in the correct order
+					var argumentNames []string
+
+					// argumentids can be either a string (comma-separated) or an array
+					if argumentIDs, ok := mutation["argumentids"].([]any); ok {
+						for _, id := range argumentIDs {
+							if idStr, ok := id.(string); ok {
+								argumentNames = append(argumentNames, idStr)
+							}
+						}
+					} else if argumentIDs, ok := mutation["argumentids"].(string); ok {
+						argumentNames = strings.Split(argumentIDs, ",")
 					}
+
+					// Get argument values in the correct order
+					var args []string
+					for _, argName := range argumentNames {
+						// Input key format: argument_reporter_custom_paramN
+						inputKey := fmt.Sprintf("argument_reporter_custom_%s", argName)
+						value := p.getInputValue(b, inputKey, "")
+						args = append(args, value)
+					}
+
+					// Replace placeholders in proccode with actual values
+					// Placeholders: %s (string), %b (boolean), %n (number)
 					if len(args) > 0 {
-						return fmt.Sprintf("%s %s", proccode, strings.Join(args, " "))
+						result := proccode
+						for _, arg := range args {
+							// Replace first occurrence of any placeholder
+							result = strings.Replace(result, "%s", arg, 1)
+							result = strings.Replace(result, "%b", arg, 1)
+							result = strings.Replace(result, "%n", arg, 1)
+						}
+						return result
 					}
 					return proccode
 				}
 			}
 		}
 		return "custom block"
+	},
+
+	// Additional sound blocks
+	"sound_seteffectto": func(b *RawBlock, p *ScratchBlocksParser) string {
+		effect := p.getInputValue(b, "EFFECT", "volume")
+		value := p.getInputValue(b, "VALUE", "100")
+		return fmt.Sprintf("set [%s v] effect to (%s)", effect, value)
+	},
+	"sound_cleareffects": func(b *RawBlock, p *ScratchBlocksParser) string {
+		return "clear sound effects"
+	},
+
+	// Additional sensing blocks
+	"sensing_of": func(b *RawBlock, p *ScratchBlocksParser) string {
+		property := p.getInputValue(b, "PROPERTY", "x position")
+		object := p.getInputValue(b, "OBJECT", "_stage_")
+		return fmt.Sprintf("(%s of [%s v])", property, object)
+	},
+	"sensing_coloristouchingcolor": func(b *RawBlock, p *ScratchBlocksParser) string {
+		color1 := p.getInputValue(b, "COLOR", "")
+		color2 := p.getInputValue(b, "COLOR2", "")
+		return fmt.Sprintf("color (%s) is touching (%s)?", color1, color2)
+	},
+
+	// Additional pen blocks (if supported)
+	"pen_penDown": func(b *RawBlock, p *ScratchBlocksParser) string {
+		return "pen down"
+	},
+	"pen_penUp": func(b *RawBlock, p *ScratchBlocksParser) string {
+		return "pen up"
+	},
+	"pen_setPenColorToColor": func(b *RawBlock, p *ScratchBlocksParser) string {
+		color := p.getInputValue(b, "COLOR", "")
+		return fmt.Sprintf("set pen color to (%s)", color)
+	},
+	"pen_changePenSizeBy": func(b *RawBlock, p *ScratchBlocksParser) string {
+		size := p.getInputValue(b, "SIZE", "1")
+		return fmt.Sprintf("change pen size by (%s)", size)
+	},
+	"pen_setPenSizeTo": func(b *RawBlock, p *ScratchBlocksParser) string {
+		size := p.getInputValue(b, "SIZE", "1")
+		return fmt.Sprintf("set pen size to (%s)", size)
 	},
 }
 
@@ -533,23 +631,99 @@ func (p *ScratchBlocksParser) getInputValue(block *RawBlock, inputName string, d
 
 	// Input format: [type, value]
 	if len(input) >= 2 {
+		inputType, typeOk := input[0].(float64)
 		value := input[1]
-		
-		// Handle different value types
-		switch v := value.(type) {
-		case string:
-			return v
-		case float64:
-			return fmt.Sprintf("%.0f", v)
-		case int:
-			return fmt.Sprintf("%d", v)
-		case []any:
-			// Nested input: [type, [subType, actualValue]]
-			if len(v) >= 2 {
-				if nested, ok := v[1].(string); ok {
-					return nested
-				}
+
+		if !typeOk {
+			// If type is not a number, try to return value directly
+			if v, ok := value.(string); ok {
+				return v
 			}
+			return defaultValue
+		}
+
+		// Handle different Scratch 3.0 input types
+		// Type 1: Literal value (string or number)
+		if inputType == 1 {
+			// Check if value is an array format: [id, actualValue, ...]
+			if arr, ok := value.([]any); ok && len(arr) >= 2 {
+				// Format: [id, actualValue, ...]
+				// Return the actual value
+				if actualValue, ok := arr[1].(string); ok {
+					return actualValue
+				} else if actualValue, ok := arr[1].(float64); ok {
+					return fmt.Sprintf("%.0f", actualValue)
+				}
+				return fmt.Sprintf("%v", arr[1])
+			}
+			// Regular value
+			switch v := value.(type) {
+			case string:
+				return v
+			case float64:
+				return fmt.Sprintf("%.0f", v)
+			case int:
+				return fmt.Sprintf("%d", v)
+			case bool:
+				if v {
+					return "true"
+				}
+				return "false"
+			}
+		}
+
+		// Type 2: Menu option - value is an ID, actual display value is in Fields
+		if inputType == 2 {
+			if menuID, ok := value.(string); ok {
+				// Try to get the display value from Fields
+				if fieldValue, exists := block.Fields[inputName]; exists && len(fieldValue) > 0 {
+					return fieldValue[0]
+				}
+				// Fall back to the menu ID if field not found
+				return menuID
+			}
+		}
+
+		// Type 3: Nested block - return block ID (would need recursive parsing for full support)
+		if inputType == 3 {
+			if blockID, ok := value.(string); ok {
+				// Try to get the field value corresponding to this block
+				// For sensing blocks like "sensing_touchingobject", the field might be named differently
+				// Check if there's a field with the same name as the input
+				if fieldValue, exists := block.Fields[inputName]; exists && len(fieldValue) > 0 {
+					return fieldValue[0]
+				}
+				// Return block ID as fallback
+				return fmt.Sprintf("[block: %s]", blockID)
+			}
+		}
+
+		// Type 4-13: References (variables, lists, costumes, sounds, etc.)
+		// The value is usually the name directly, but could be an array format ["name", ...]
+		if inputType >= 4 && inputType <= 13 {
+			if v, ok := value.(string); ok {
+				return v
+			}
+			// Handle array format: ["name", value, ...]
+			if arr, ok := value.([]any); ok && len(arr) > 0 {
+				if name, ok := arr[0].(string); ok {
+					return name
+				}
+				// Fallback to string representation
+				return fmt.Sprintf("%v", arr[0])
+			}
+		}
+
+		// Fallback: try to convert to string
+		if v, ok := value.(string); ok {
+			return v
+		}
+		if v, ok := value.(float64); ok {
+			return fmt.Sprintf("%.0f", v)
+		}
+		if arr, ok := value.([]any); ok && len(arr) > 0 {
+			// Handle array values that weren't caught above
+			return fmt.Sprintf("%v", arr[0])
 		}
 	}
 

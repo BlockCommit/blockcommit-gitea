@@ -3,33 +3,16 @@
  * This module provides scratchblocks rendering support for Scratch project diffs
  */
 
-// Dynamic import of scratchblocks library
-let scratchblocks: any = null;
+import scratchblocks from 'scratchblocks';
+
 let translationsLoaded = false;
 
 /**
  * Load scratchblocks library dynamically
  */
 export async function loadScratchblocks(): Promise<void> {
-  if (scratchblocks) return; // Already loaded
-
-  try {
-    // Try to load from CDN first
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/scratchblocks@3.6.6/dist/scratchblocks.min.js';
-    script.async = true;
-    
-    await new Promise((resolve, reject) => {
-      script.onload = resolve;
-      script.onerror = reject;
-      document.head.appendChild(script);
-    });
-
-    scratchblocks = (window as any).scratchblocks;
-  } catch (error) {
-    console.error('Failed to load scratchblocks from CDN:', error);
-    throw new Error('Could not load scratchblocks library');
-  }
+  // Library is now imported statically via ES modules
+  return Promise.resolve();
 }
 
 /**
@@ -39,17 +22,7 @@ export async function loadScratchblocksTranslations(locale: string = 'en'): Prom
   if (translationsLoaded) return;
 
   try {
-    // Load translations file
-    const translationsScript = document.createElement('script');
-    translationsScript.src = `https://cdn.jsdelivr.net/npm/scratchblocks@3.6.6/dist/translations-all.js`;
-    translationsScript.async = true;
-    
-    await new Promise((resolve, reject) => {
-      translationsScript.onload = resolve;
-      translationsScript.onerror = reject;
-      document.head.appendChild(translationsScript);
-    });
-
+    // scratchblocks translations are included by default
     translationsLoaded = true;
   } catch (error) {
     console.warn('Failed to load scratchblocks translations:', error);
@@ -74,7 +47,7 @@ export async function renderScratchblocks(options?: {
 
   const renderOptions = {
     style: options?.style || 'scratch3',
-    languages: options?.languages || ['en', 'zh-cn'],
+    languages: options?.languages || ['en'],
     scale: options?.scale || 1,
   };
 
@@ -123,7 +96,7 @@ export async function renderScratchblocksInContainer(
 
   const renderOptions = {
     style: options?.style || 'scratch3',
-    languages: options?.languages || ['en', 'zh-cn'],
+    languages: options?.languages || ['en'],
     scale: options?.scale || 1,
   };
 
@@ -169,7 +142,7 @@ export async function initSb3DiffRenderer(): Promise<void> {
     // Render scratchblocks
     await renderScratchblocks({
       style: 'scratch3',
-      languages: [htmlLang, 'en'],
+      languages: ['en'],
       scale: 1,
     });
 
@@ -225,7 +198,7 @@ export async function parseScratchblocksToSvg(
 
   const renderOptions = {
     style: options?.style || 'scratch3',
-    languages: options?.languages || ['en', 'zh-cn'],
+    languages: options?.languages || ['en'],
   };
 
   try {

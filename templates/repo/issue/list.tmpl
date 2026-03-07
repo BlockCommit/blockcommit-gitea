@@ -24,7 +24,7 @@
 				{{if .PageIsIssueList}}
 					<a class="ui small primary button issue-list-new" href="{{.RepoLink}}/issues/new{{if .NewIssueChooseTemplate}}/choose{{end}}">{{ctx.Locale.Tr "repo.issues.new"}}</a>
 				{{else}}
-					<a class="ui small primary button new-pr-button issue-list-new {{if not .PullRequestCtx.CanCreateNewPull}}disabled{{end}}" href="{{.PullRequestCtx.MakeDefaultCompareLink .Repository.DefaultBranch}}">{{ctx.Locale.Tr "repo.pulls.new"}}</a>
+					<a class="ui small primary button new-pr-button issue-list-new {{if not .PullRequestCtx.CanCreateNewPullBool}}disabled{{end}}" href="{{.PullRequestCtx.MakeDefaultCompareLink .Repository.DefaultBranch}}">{{ctx.Locale.Tr "repo.pulls.new"}}</a>
 				{{end}}
 			{{else}}
 				{{/* archived, view compare page only */}}

@@ -7,6 +7,7 @@ import './globals.ts';
 
 import './webcomponents/index.ts';
 import './modules/user-settings.ts'; // templates also need to use localUserSettings in inline scripts
+import './features/scratchblocks.ts'; // load scratchblocks for SB3 diff visualization
 import {onDomReady} from './utils/dom.ts';
 
 // TODO: There is a bug in htmx, it incorrectly checks "readyState === 'complete'" when the DOM tree is ready and won't trigger DOMContentLoaded
